@@ -1,0 +1,145 @@
+<!-- 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>PDF Chatbot - TejBotFlow</title>
+    <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+    
+    <nav class="navbar">
+        <div class="navbar-left">TejBotFlow</div>
+        <div class="navbar-right" id="navbarRight">
+            <button onclick="openLogin()" class="nav-btn">Login</button>
+            <button onclick="openSignup()" class="nav-btn">Sign Up</button>
+        </div>
+        <div class="navbar-user-info" id="userInfo" style="display:none;">
+            Logged in as <span id="userEmail"></span>
+            <button onclick="logout()" class="nav-btn">Logout</button>
+        </div>
+    </nav>
+
+
+    <div id="loginSignupForms" class="modal" style="display:none;">
+      <div id="loginForm" class="form-container" style="display:none;">
+          <h3>Login</h3>
+          <input type="email" id="loginEmail" placeholder="Email" />
+          <input type="password" id="loginPassword" placeholder="Password" />
+          <button onclick="submitLogin()">Login</button>
+          <button onclick="closeForms()" class="cancel-btn">Cancel</button>
+          <div id="loginMsg" class="form-msg"></div>
+      </div>
+
+      <div id="signupForm" class="form-container" style="display:none;">
+          <h3>Sign Up</h3>
+          <input type="email" id="signupEmail" placeholder="Email" />
+          <input type="password" id="signupPassword" placeholder="Password" />
+          <button onclick="submitSignup()">Sign Up</button>
+          <button onclick="closeForms()" class="cancel-btn">Cancel</button>
+          <div id="signupMsg" class="form-msg"></div>
+      </div>
+    </div>
+
+
+    <div class="chat-container" id="chatContainer" style="display:none;">
+        <div id="messages"></div>
+        <div id="pdfFileDisplay" class="pdf-filename" style="display:none;"></div>
+
+        <div class="chat-input-area">
+            <form id="uploadForm" style="margin:0;">
+                <input type="file" id="fileInput" name="file" style="display:none;" accept=".pdf,.txt" />
+                <button type="button" class="upload-btn" title="Upload PDF">Upload PDF</button>
+            </form>
+
+            <input type="text" id="userInput" placeholder="Ask your PDF..." autocomplete="off" disabled />
+            <button id="sendBtn" class="send-btn" title="Send message" disabled>Send</button>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="/static/main.js"></script>
+</body>
+</html> -->
+<!DOCTYPE html>
+<html lang="en" >
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>TejBotFlow - Chat</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+</head>
+<body>
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="logo">TejBotFlow</div>
+    <div class="nav-links">
+      {% if user %}
+        <span>Welcome, <strong>{{ user }}</strong></span>
+        <form action="/logout" method="POST" style="display:inline;">
+          <button type="submit">Logout</button>
+        </form>
+      {% else %}
+        <a href="/login">Login</a>
+        <a href="/signup">Sign Up</a>
+      {% endif %}
+    </div>
+  </nav>
+
+  
+  <div class="main-container">
+    <div id="chatbox">
+      {% if chat_history %}
+        {% for message in chat_history %}
+            <div class="{{ message.role }}">
+                <p>{{ message.content | safe }}</p>
+            </div>
+        {% endfor %}
+    
+      {% else %}
+        <p class="no-chat-message">No messages yet. Upload a file and start chatting!</p>
+      {% endif %}
+    </div>
+
+    <div class="bottom-controls">
+
+      <!-- Upload form -->
+      <form id="uploadForm" action="/upload" method="POST" enctype="multipart/form-data" style="flex:1;" onsubmit="return checkLoginAndUpload();">
+        <input type="file" name="file" accept=".pdf,.txt" required />
+        <button type="submit">Upload</button>
+      </form>
+
+      <!-- Chat input form -->
+      <form id="chatForm" action="/chat" method="POST" style="flex-grow:2; display:flex;" onsubmit="return checkLoginAndChat();">
+        <input type="text" name="message" placeholder="Ask your PDF..." required />
+        <button type="submit">Send</button>
+      </form>
+    </div>
+  </div>
+
+<script>
+  // Flask se template variable user ko yahan assign kar rahe hain
+  const isLoggedIn = {{ 'true' if user else 'false' }};
+
+  function checkLoginAndUpload() {
+    if (!isLoggedIn) {
+      alert("Please login first to upload files.");
+      return false;  // prevent form submission
+    }
+    return true;
+  }
+
+  function checkLoginAndChat() {
+    if (!isLoggedIn) {
+      alert("Please login first to ask questions.");
+      return false;  // prevent form submission
+    }
+    return true;
+  }
+</script>
+
+</body>
+</html>
+

@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>{% block title %}TejBotFlow{% endblock %}</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="navbar-left">TejBotFlow</div>
+    <div class="navbar-right">
+      {% if session.get('user') %}
+        <span>Welcome, {{ session.get('user') }}</span>
+        <form method="POST" action="/logout" style="display:inline;">
+          <button type="submit" class="nav-btn">Logout</button>
+        </form>
+      {% else %}
+        <a href="/login" class="nav-btn">Login</a>
+        <a href="/signup" class="nav-btn">Sign Up</a>
+      {% endif %}
+    </div>
+  </nav>
+  <div class="main-content">
+    {% block content %}{% endblock %}
+  </div>
+</body>
+</html>
