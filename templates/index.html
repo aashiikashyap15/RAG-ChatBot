@@ -1,145 +1,319 @@
-<!-- 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>PDF Chatbot - TejBotFlow</title>
-    <link rel="stylesheet" href="/static/style.css" />
-</head>
-<body>
-    
-    <nav class="navbar">
-        <div class="navbar-left">TejBotFlow</div>
-        <div class="navbar-right" id="navbarRight">
-            <button onclick="openLogin()" class="nav-btn">Login</button>
-            <button onclick="openSignup()" class="nav-btn">Sign Up</button>
+{% extends "base.html" %}
+{% block title %}RAG Chatbot{% endblock %}
+
+{% block content %}
+<div class="app-wrapper">
+
+    <header class="app-header">
+        <div class="header-left">
+            <span class="logo-icon">🤖</span>
+            <span class="app-title">RAG Chatbot</span>
         </div>
-        <div class="navbar-user-info" id="userInfo" style="display:none;">
-            Logged in as <span id="userEmail"></span>
-            <button onclick="logout()" class="nav-btn">Logout</button>
+        <div class="header-right">
+            <span class="welcome-text">👤 {{ username }}</span>
+            <a href="/logout" class="btn-logout">Logout</a>
         </div>
-    </nav>
+    </header>
 
+    <div class="app-body">
 
-    <div id="loginSignupForms" class="modal" style="display:none;">
-      <div id="loginForm" class="form-container" style="display:none;">
-          <h3>Login</h3>
-          <input type="email" id="loginEmail" placeholder="Email" />
-          <input type="password" id="loginPassword" placeholder="Password" />
-          <button onclick="submitLogin()">Login</button>
-          <button onclick="closeForms()" class="cancel-btn">Cancel</button>
-          <div id="loginMsg" class="form-msg"></div>
-      </div>
+        <aside class="sidebar">
+            <h3>📄 Upload Document</h3>
 
-      <div id="signupForm" class="form-container" style="display:none;">
-          <h3>Sign Up</h3>
-          <input type="email" id="signupEmail" placeholder="Email" />
-          <input type="password" id="signupPassword" placeholder="Password" />
-          <button onclick="submitSignup()">Sign Up</button>
-          <button onclick="closeForms()" class="cancel-btn">Cancel</button>
-          <div id="signupMsg" class="form-msg"></div>
-      </div>
-    </div>
-
-
-    <div class="chat-container" id="chatContainer" style="display:none;">
-        <div id="messages"></div>
-        <div id="pdfFileDisplay" class="pdf-filename" style="display:none;"></div>
-
-        <div class="chat-input-area">
-            <form id="uploadForm" style="margin:0;">
-                <input type="file" id="fileInput" name="file" style="display:none;" accept=".pdf,.txt" />
-                <button type="button" class="upload-btn" title="Upload PDF">Upload PDF</button>
-            </form>
-
-            <input type="text" id="userInput" placeholder="Ask your PDF..." autocomplete="off" disabled />
-            <button id="sendBtn" class="send-btn" title="Send message" disabled>Send</button>
-        </div>
-    </div>
-
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="/static/main.js"></script>
-</body>
-</html> -->
-<!DOCTYPE html>
-<html lang="en" >
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>TejBotFlow - Chat</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
-</head>
-<body>
-
-  <!-- Navbar -->
-  <nav class="navbar">
-    <div class="logo">TejBotFlow</div>
-    <div class="nav-links">
-      {% if user %}
-        <span>Welcome, <strong>{{ user }}</strong></span>
-        <form action="/logout" method="POST" style="display:inline;">
-          <button type="submit">Logout</button>
-        </form>
-      {% else %}
-        <a href="/login">Login</a>
-        <a href="/signup">Sign Up</a>
-      {% endif %}
-    </div>
-  </nav>
-
-  
-  <div class="main-container">
-    <div id="chatbox">
-      {% if chat_history %}
-        {% for message in chat_history %}
-            <div class="{{ message.role }}">
-                <p>{{ message.content | safe }}</p>
+            <div class="upload-area" id="upload-area">
+                <div class="upload-icon">📁</div>
+                <p>Click or drag PDF / TXT</p>
+                <p class="upload-hint" id="file-name-display">
+                    No file chosen
+                </p>
             </div>
-        {% endfor %}
-    
-      {% else %}
-        <p class="no-chat-message">No messages yet. Upload a file and start chatting!</p>
-      {% endif %}
+            <input
+                type="file"
+                id="file-input"
+                accept=".pdf,.txt"
+                style="display:none"
+            >
+
+            <button class="btn-upload" onclick="uploadFile()">
+                ⬆️ Upload & Process
+            </button>
+
+            <div class="upload-spinner" id="upload-spinner">
+                <div class="spinner"></div>
+                <span>Processing...</span>
+            </div>
+
+            <div id="upload-status"></div>
+
+            {% if sources %}
+            <div class="sources-list">
+                <h4>📚 Indexed Documents</h4>
+                {% for s in sources %}
+                <div class="source-item">📄 {{ s }}</div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <div class="debug-panel" id="debug-panel">
+                <h4>🔍 Debug Info</h4>
+                <div id="debug-content">
+                    <span class="debug-empty">No query yet</span>
+                </div>
+            </div>
+        </aside>
+
+        <main class="chat-main">
+            <div class="messages" id="messages">
+                <div class="message bot-message">
+                    <div class="avatar">🤖</div>
+                    <div class="bubble">
+                        👋 Hello <strong>{{ username }}</strong>!
+                        Upload a document and ask me anything.
+                        I'll tell you exactly which page the
+                        answer came from!
+                    </div>
+                </div>
+            </div>
+
+            <div class="typing-indicator" id="typing">
+                <div class="avatar">🤖</div>
+                <div class="typing-dots">
+                    <span></span><span></span><span></span>
+                </div>
+            </div>
+
+            <div class="chat-input-area">
+                <button
+                    class="btn-clear"
+                    onclick="clearChat()"
+                    title="Clear chat"
+                >🗑</button>
+                <input
+                    type="text"
+                    id="query-input"
+                    placeholder="Ask something about your document..."
+                    onkeydown="if(event.key==='Enter') sendMessage()"
+                    autocomplete="off"
+                >
+                <button class="btn-send" onclick="sendMessage()">
+                    ➤
+                </button>
+            </div>
+        </main>
+
     </div>
+</div>
+{% endblock %}
 
-    <div class="bottom-controls">
-
-      <!-- Upload form -->
-      <form id="uploadForm" action="/upload" method="POST" enctype="multipart/form-data" style="flex:1;" onsubmit="return checkLoginAndUpload();">
-        <input type="file" name="file" accept=".pdf,.txt" required />
-        <button type="submit">Upload</button>
-      </form>
-
-      <!-- Chat input form -->
-      <form id="chatForm" action="/chat" method="POST" style="flex-grow:2; display:flex;" onsubmit="return checkLoginAndChat();">
-        <input type="text" name="message" placeholder="Ask your PDF..." required />
-        <button type="submit">Send</button>
-      </form>
-    </div>
-  </div>
-
+{% block scripts %}
 <script>
-  // Flask se template variable user ko yahan assign kar rahe hain
-  const isLoggedIn = {{ 'true' if user else 'false' }};
+const uploadArea = document.getElementById("upload-area");
+const fileInput  = document.getElementById("file-input");
 
-  function checkLoginAndUpload() {
-    if (!isLoggedIn) {
-      alert("Please login first to upload files.");
-      return false;  // prevent form submission
-    }
-    return true;
-  }
+uploadArea.addEventListener("click", () => fileInput.click());
 
-  function checkLoginAndChat() {
-    if (!isLoggedIn) {
-      alert("Please login first to ask questions.");
-      return false;  // prevent form submission
+uploadArea.addEventListener("dragover", e => {
+    e.preventDefault();
+    uploadArea.classList.add("drag-over");
+});
+uploadArea.addEventListener("dragleave", () => {
+    uploadArea.classList.remove("drag-over");
+});
+uploadArea.addEventListener("drop", e => {
+    e.preventDefault();
+    uploadArea.classList.remove("drag-over");
+    if (e.dataTransfer.files[0]) {
+        fileInput.files = e.dataTransfer.files;
+        updateFileName(e.dataTransfer.files[0].name);
     }
-    return true;
-  }
+});
+
+fileInput.addEventListener("change", function() {
+    if (this.files[0]) updateFileName(this.files[0].name);
+});
+
+function updateFileName(name) {
+    document.getElementById("file-name-display").textContent = name;
+}
+
+async function uploadFile() {
+    const file = fileInput.files[0];
+    if (!file) {
+        showUploadStatus("❌ Please select a file first.", false);
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    setUploading(true);
+    clearUploadStatus();
+
+    try {
+        const res = await fetch("/upload", {
+            method: "POST",
+            body: formData
+        });
+        const data = await res.json();
+
+        if (data.success) {
+            showUploadStatus(
+                `✅ Done! ${data.chunks_stored} chunks stored ` +
+                `in ${data.processing_time_sec}s`,
+                true
+            );
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            showUploadStatus(
+                "❌ " + (data.error || "Failed"), false
+            );
+        }
+    } catch (e) {
+        showUploadStatus("❌ Network error. Retry.", false);
+    } finally {
+        setUploading(false);
+    }
+}
+
+function setUploading(state) {
+    document.getElementById("upload-spinner").style.display =
+        state ? "flex" : "none";
+}
+
+function showUploadStatus(msg, success) {
+    const el = document.getElementById("upload-status");
+    el.className = "upload-msg " + (success ? "success" : "error");
+    el.textContent = msg;
+}
+
+function clearUploadStatus() {
+    const el = document.getElementById("upload-status");
+    el.textContent = "";
+    el.className = "";
+}
+
+async function sendMessage() {
+    const input = document.getElementById("query-input");
+    const query = input.value.trim();
+    if (!query) return;
+
+    addUserMessage(query);
+    input.value = "";
+    setTyping(true);
+
+    try {
+        const res = await fetch("/chat", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ query })
+        });
+        const data = await res.json();
+        setTyping(false);
+
+        if (data.error) {
+            addBotMessage("❌ " + data.error, [], {});
+        } else {
+            addBotMessage(data.answer, data.sources, data.debug);
+            updateDebugPanel(data.debug);
+        }
+    } catch (e) {
+        setTyping(false);
+        addBotMessage("❌ Network error. Try again.", [], {});
+    }
+}
+
+function addUserMessage(text) {
+    const msgs = document.getElementById("messages");
+    const wrap = document.createElement("div");
+    wrap.className = "message user-message";
+    wrap.innerHTML = `
+        <div class="bubble user-bubble">${escHtml(text)}</div>
+        <div class="avatar">👤</div>
+    `;
+    msgs.appendChild(wrap);
+    scrollToBottom();
+}
+
+function addBotMessage(answer, sources, debug) {
+    const msgs = document.getElementById("messages");
+    const wrap = document.createElement("div");
+    wrap.className = "message bot-message";
+
+    let answerHtml = escHtml(answer).replace(/\n/g, "<br>");
+
+    let sourcesHtml = "";
+    if (sources && sources.length > 0) {
+        sourcesHtml = `<div class="source-chips">
+            <strong>📌 Sources used:</strong><br>`;
+        sources.forEach(s => {
+            sourcesHtml += `
+            <span class="source-chip"
+                title="${escHtml(s.preview)}">
+                📄 ${escHtml(s.source)} |
+                Page ${s.page} |
+                Chunk ${s.chunk_index}
+            </span>`;
+        });
+        sourcesHtml += `</div>`;
+    }
+
+    wrap.innerHTML = `
+        <div class="avatar">🤖</div>
+        <div class="bubble">
+            ${answerHtml}
+            ${sourcesHtml}
+        </div>
+    `;
+    msgs.appendChild(wrap);
+    scrollToBottom();
+}
+
+function updateDebugPanel(debug) {
+    if (!debug || Object.keys(debug).length === 0) return;
+    document.getElementById("debug-content").innerHTML = `
+        <div class="debug-row">
+            ⏱ Query time:
+            <strong>${debug.query_time_sec}s</strong>
+        </div>
+        <div class="debug-row">
+            📦 Chunks:
+            <strong>${debug.chunks_retrieved}</strong>
+        </div>
+        <div class="debug-row">
+            🔑 Session:
+            <strong>${debug.session_id}</strong>
+        </div>
+    `;
+}
+
+function setTyping(show) {
+    document.getElementById("typing").style.display =
+        show ? "flex" : "none";
+    if (show) scrollToBottom();
+}
+
+function scrollToBottom() {
+    const msgs = document.getElementById("messages");
+    msgs.scrollTop = msgs.scrollHeight;
+}
+
+async function clearChat() {
+    await fetch("/clear", { method: "POST" });
+    document.getElementById("messages").innerHTML = `
+        <div class="message bot-message">
+            <div class="avatar">🤖</div>
+            <div class="bubble">
+                🔄 Chat cleared! Ask me something new.
+            </div>
+        </div>`;
+    document.getElementById("debug-content").innerHTML =
+        `<span class="debug-empty">No query yet</span>`;
+}
+
+function escHtml(text) {
+    const d = document.createElement("div");
+    d.appendChild(document.createTextNode(text));
+    return d.innerHTML;
+}
 </script>
-
-</body>
-</html>
-
+{% endblock %}

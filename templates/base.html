@@ -1,27 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>{% block title %}TejBotFlow{% endblock %}</title>
-  <link rel="stylesheet" href="/static/style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}RAG Chatbot{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    {% block head %}{% endblock %}
 </head>
 <body>
-  <nav class="navbar">
-    <div class="navbar-left">TejBotFlow</div>
-    <div class="navbar-right">
-      {% if session.get('user') %}
-        <span>Welcome, {{ session.get('user') }}</span>
-        <form method="POST" action="/logout" style="display:inline;">
-          <button type="submit" class="nav-btn">Logout</button>
-        </form>
-      {% else %}
-        <a href="/login" class="nav-btn">Login</a>
-        <a href="/signup" class="nav-btn">Sign Up</a>
-      {% endif %}
-    </div>
-  </nav>
-  <div class="main-content">
     {% block content %}{% endblock %}
-  </div>
+    {% block scripts %}{% endblock %}
 </body>
 </html>

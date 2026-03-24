@@ -1,5 +1,12 @@
 Flask
-requests
+flask-bcrypt
+flask-cors
+google-generativeai
 PyMuPDF
-chromadb
-uuid
+psycopg2-binary
+pgvector
+sqlalchemy
+python-dotenv
+requests
+Pillow
+markdown
