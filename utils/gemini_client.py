@@ -4,7 +4,7 @@ import os
 
 load_dotenv()
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
-_model = genai.GenerativeModel("gemini-2.5-flash-lite")
+_model = genai.GenerativeModel("gemini-2.0-flash-lite")
 
 
 def build_prompt(query: str, chunks: list, history: list) -> str:
